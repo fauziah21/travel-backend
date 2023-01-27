@@ -9,6 +9,7 @@ import com.fauzia.project.backend.repository.TravelPackageRepository;
 import com.fauzia.project.backend.utils.RandomStringGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Files;
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class TravelPackageGalleryService {
-    private final Path root = Paths.get("D:\\images");
+    private final Path root = Paths.get("D:\\images\\");
     @Autowired
     private TravelPackageGalleryRepository travelPackageGalleryRepository;
     @Autowired
@@ -86,16 +87,29 @@ public class TravelPackageGalleryService {
     }
 
     //HARD DELETE
+    @Transactional
     public boolean delete(int galleryId){
         Optional<TravelPackageGalleryModel> galleryOpt = travelPackageGalleryRepository.findById(galleryId);
 
         if (galleryOpt.isEmpty()){
             return false;
         }else {
-            TravelPackageGalleryModel deleteGallery = galleryOpt.get();
-            travelPackageGalleryRepository.delete(deleteGallery);
+            /*
+            * 1. delete file in storage
+            * 2. delete file path in db*/
+            try{
+                System.err.println(root + galleryOpt.get().getGalleryImage());
+                //delete file in storage
+                Files.deleteIfExists(Paths.get(root + "\\" + galleryOpt.get().getGalleryImage()));
+                //delete file in db
+                TravelPackageGalleryModel deleteGallery = galleryOpt.get();
+                travelPackageGalleryRepository.delete(deleteGallery);
 
-            return true;
+                return true;
+            }catch (Exception e){
+                e.printStackTrace();
+                return false;
+            }
         }
     }
 }
